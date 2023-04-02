@@ -129,5 +129,5 @@ int main(void)
 
     vector_free(vec);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
