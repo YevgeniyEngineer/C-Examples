@@ -15,10 +15,21 @@ Vector *vector_init(size_t element_size, size_t initial_capacity)
 {
     printf("Allocating memory.\n");
     Vector *vec = (Vector *)malloc(sizeof(Vector));
+    if (!vec)
+    {
+        printf("Error: Unable to allocate memory for vector struct\n");
+        return NULL;
+    }
     vec->size = 0;
     vec->capacity = initial_capacity;
     vec->element_size = element_size;
     vec->data = malloc(vec->capacity * vec->element_size);
+    if (!vec->data)
+    {
+        printf("Error: Unable to allocate memory for vector data\n");
+        free(vec);
+        return NULL;
+    }
     return vec;
 }
 
@@ -33,9 +44,16 @@ void vector_push_back(Vector *vec, const void *value)
 {
     if (vec->size >= vec->capacity)
     {
-        vec->capacity *= 2;
-        vec->data = realloc(vec->data, vec->capacity * vec->element_size);
         printf("Reallocating memory.\n");
+        vec->capacity *= 2;
+        void *new_data = realloc(vec->data, vec->capacity * vec->element_size);
+        if (new_data == NULL)
+        {
+            printf("Error: Unable to allocate memory for vector expansion\n");
+            vector_free(vec);
+            exit(EXIT_FAILURE);
+        }
+        vec->data = new_data;
     }
     memcpy((char *)vec->data + vec->size * vec->element_size, value, vec->element_size);
     vec->size += 1;
@@ -46,8 +64,7 @@ void *vector_at(Vector *vec, size_t index)
     if (index >= vec->size)
     {
         printf("Index out of bounds: %zu\n", index);
-        vector_free(vec);
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     return (char *)vec->data + index * vec->element_size;
 }
@@ -95,6 +112,11 @@ int main(void)
 {
     size_t capacity = 10;
     Vector *vec = vector_init(sizeof(double), capacity);
+    if (!vec)
+    {
+        printf("Error: Unable to initialize vector\n");
+        return EXIT_FAILURE;
+    }
 
     // Add values
     for (int i = 0; i < 30; ++i)
@@ -107,8 +129,12 @@ int main(void)
     // Print values
     for (size_t i = 0; i < vec->size; ++i)
     {
-        double *value_ptr = (double *)vector_at(vec, i);
-        printf("Element %ld = %lf \n", i, *value_ptr);
+        void *value_ptr = vector_at(vec, i);
+        if (value_ptr == NULL)
+        {
+            break;
+        }
+        printf("Element %ld = %lf \n", i, *((double *)value_ptr));
     }
     printf("\n");
 
